@@ -1,4 +1,4 @@
-package com.vsv.user.domain.model
+package com.vsv.chirp.domain.model
 
 data class AuthenticatedUser(
     val user: User,

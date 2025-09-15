@@ -12,12 +12,11 @@ repositories {
 }
 
 dependencies {
+    api(libs.kotlin.reflect)
+    api(libs.jackson.module.kotlin)
     testImplementation(kotlin("test"))
 }
 
 tasks.test {
     useJUnitPlatform()
-}
-kotlin {
-    jvmToolchain(21)
 }

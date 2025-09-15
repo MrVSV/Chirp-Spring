@@ -1,4 +1,4 @@
-package com.vsv.user.domain.model
+package com.vsv.chirp.domain.model
 
 import java.util.UUID
 
@@ -8,5 +8,5 @@ data class User(
     val id: UserId,
     val username: String,
     val email: String,
-    val hasEmailVerified: Boolean,
+    val hasVerifiedEmail: Boolean,
 )

@@ -3,8 +3,8 @@ spring:
     name: chirp
 
   datasource:
-    url: jdbc:postgresql://db.clqngdkfeqbdimbtsidg.supabase.co:5432/postgres
-    username: postgres
+    url: jdbc:postgresql://aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+    username: postgres.clqngdkfeqbdimbtsidg
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
