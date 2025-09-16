@@ -1,9 +1,6 @@
 package com.vsv.chirp.api.controllers
 
-import com.vsv.chirp.api.dto.AuthenticatedUserDto
-import com.vsv.chirp.api.dto.LoginRequest
-import com.vsv.chirp.api.dto.RegisterRequest
-import com.vsv.chirp.api.dto.UserDto
+import com.vsv.chirp.api.dto.*
 import com.vsv.chirp.api.mappers.toAuthenticatedUserDto
 import com.vsv.chirp.api.mappers.toUserDto
 import com.vsv.chirp.service.auth.AuthService
@@ -36,5 +33,10 @@ class AuthController(private val authService: AuthService) {
             email = body.email,
             password = body.password
         ).toAuthenticatedUserDto()
+    }
+
+    @PostMapping("/refresh")
+    fun refresh(@RequestBody body: RefreshRequest): AuthenticatedUserDto {
+        return authService.refresh(body.refreshToken).toAuthenticatedUserDto()
     }
 }
