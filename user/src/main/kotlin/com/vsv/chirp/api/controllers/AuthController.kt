@@ -1,7 +1,10 @@
 package com.vsv.chirp.api.controllers
 
+import com.vsv.chirp.api.dto.AuthenticatedUserDto
+import com.vsv.chirp.api.dto.LoginRequest
 import com.vsv.chirp.api.dto.RegisterRequest
 import com.vsv.chirp.api.dto.UserDto
+import com.vsv.chirp.api.mappers.toAuthenticatedUserDto
 import com.vsv.chirp.api.mappers.toUserDto
 import com.vsv.chirp.service.auth.AuthService
 import jakarta.validation.Valid
@@ -23,5 +26,15 @@ class AuthController(private val authService: AuthService) {
             username = body.username,
             password = body.password,
         ).toUserDto()
+    }
+
+    @PostMapping("/login")
+    fun login(
+        @Valid @RequestBody body: LoginRequest,
+    ): AuthenticatedUserDto {
+        return authService.login(
+            email = body.email,
+            password = body.password
+        ).toAuthenticatedUserDto()
     }
 }

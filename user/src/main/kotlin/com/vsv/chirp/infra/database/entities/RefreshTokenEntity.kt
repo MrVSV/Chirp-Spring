@@ -27,7 +27,7 @@ class RefreshTokenEntity(
     @Column(nullable = false)
     var userId: UserId,
     @Column(nullable = false)
-    var expiresIn: Instant,
+    var expiresAt: Instant,
     @Column(nullable = false)
     var hashedToken: String,
     @CreationTimestamp
