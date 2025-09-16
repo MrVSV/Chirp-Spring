@@ -1,4 +1,4 @@
-package com.vsv.chirp.service.auth
+package com.vsv.chirp.service
 
 import com.vsv.chirp.domain.exception.InvalidTokenException
 import com.vsv.chirp.domain.exception.UserNotFoundException
@@ -25,16 +25,9 @@ class EmailVerificationService(
     @Transactional
     fun createVerificationToken(email: String): EmailVerificationToken {
         val userEntity = userRepository.findByEmail(email) ?: throw UserNotFoundException()
-        val existingTokens = emailVerificationTokenRepository.findByUserAndUsedAtIsNull(userEntity)
-        val now = Instant.now()
-        val usedTokens = existingTokens.map {
-            it.apply {
-                this.usedAt = now
-            }
-        }
-        emailVerificationTokenRepository.saveAll(usedTokens)
+        emailVerificationTokenRepository.invalidateActiveTokensForUser(userEntity)
         val token = EmailVerificationTokenEntity(
-            expiresAt = now.plus(expiryHours, ChronoUnit.HOURS),
+            expiresAt = Instant.now().plus(expiryHours, ChronoUnit.HOURS),
             user = userEntity
         )
         return emailVerificationTokenRepository.save(token).toEmailVerificationToken()
@@ -44,8 +37,12 @@ class EmailVerificationService(
     fun verifyEmail(token: String) {
         val verificationToken = emailVerificationTokenRepository.findByToken(token)
             ?: throw InvalidTokenException("Email verification token is invalid")
-        if(verificationToken.isUsed) throw InvalidTokenException("Email verification token is already used")
-        if(verificationToken.isExpired) throw InvalidTokenException("Email verification token is already expired")
+        if(verificationToken.isUsed) {
+            throw InvalidTokenException("Email verification token is already used")
+        }
+        if(verificationToken.isExpired) {
+            throw InvalidTokenException("Email verification token is already expired")
+        }
         emailVerificationTokenRepository.save(
             verificationToken.apply {
                 this.usedAt = Instant.now()

@@ -3,8 +3,8 @@ package com.vsv.chirp.api.controllers
 import com.vsv.chirp.api.dto.*
 import com.vsv.chirp.api.mappers.toAuthenticatedUserDto
 import com.vsv.chirp.api.mappers.toUserDto
-import com.vsv.chirp.service.auth.AuthService
-import com.vsv.chirp.service.auth.EmailVerificationService
+import com.vsv.chirp.service.AuthService
+import com.vsv.chirp.service.EmailVerificationService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping

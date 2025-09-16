@@ -1,4 +1,4 @@
-package com.vsv.chirp.service.auth
+package com.vsv.chirp.service
 
 import com.vsv.chirp.domain.exception.EmailNotVerifiedException
 import com.vsv.chirp.domain.exception.InvalidCredentialsException
