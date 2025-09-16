@@ -6,13 +6,13 @@ import java.time.Instant
 
 @Entity
 @Table(
-    name = "email_verification_tokens",
+    name = "password_reset_tokens",
     schema = "user_service",
     indexes = [
-        Index(name = "idx_email_verification_token_token", columnList = "token")
+        Index(name = "idx_password_reset_token_token", columnList = "token")
     ]
 )
-class EmailVerificationTokenEntity(
+class PasswordResetTokenEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long = 0,
@@ -27,10 +27,4 @@ class EmailVerificationTokenEntity(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     var user: UserEntity,
-) {
-    val isUsed: Boolean
-        get() = usedAt != null
-
-    val isExpired: Boolean
-        get() = Instant.now() > expiresAt
-}
+)
