@@ -1,5 +1,6 @@
 package com.vsv.chirp.service
 
+import com.vsv.chirp.domain.exception.EmailNotVerifiedException
 import com.vsv.chirp.domain.exception.InvalidCredentialsException
 import com.vsv.chirp.domain.exception.InvalidTokenException
 import com.vsv.chirp.domain.exception.SamePasswordException
@@ -31,6 +32,9 @@ class PasswordResetService(
     @Transactional
     fun requestPasswordReset(email: String) {
         val user = userRepository.findByEmail(email) ?: return
+        if (!user.hasVerifiedEmail) {
+            throw EmailNotVerifiedException()
+        }
         passwordResetTokenRepository.invalidateActiveTokensForUser(user)
         val token = PasswordResetTokenEntity(
             user = user,
@@ -79,7 +83,7 @@ class PasswordResetService(
         if (!passwordEncoder.matches(oldPassword, user.hashedPassword)) {
             throw InvalidCredentialsException()
         }
-        if(oldPassword == newPassword) {
+        if (oldPassword == newPassword) {
             throw SamePasswordException()
         }
         refreshTokenRepository.deleteByUserId(userId)

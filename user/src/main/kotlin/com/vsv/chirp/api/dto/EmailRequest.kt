@@ -4,10 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.validation.constraints.Email
 
-data class LoginRequest @JsonCreator constructor(
+data class EmailRequest @JsonCreator constructor(
     @field:Email
     @JsonProperty("email")
     val email: String,
-    @JsonProperty("password")
-    val password: String
 )
