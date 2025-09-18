@@ -3,6 +3,7 @@ package com.vsv.chirp.api.exception_handling
 import com.vsv.chirp.domain.exception.EmailNotVerifiedException
 import com.vsv.chirp.domain.exception.InvalidCredentialsException
 import com.vsv.chirp.domain.exception.InvalidTokenException
+import com.vsv.chirp.domain.exception.RateLimitException
 import com.vsv.chirp.domain.exception.SamePasswordException
 import com.vsv.chirp.domain.exception.UserAlreadyExistsException
 import com.vsv.chirp.domain.exception.UserNotFoundException
@@ -22,6 +23,15 @@ class AuthExceptionHandler {
         e: UserAlreadyExistsException
     ) = mapOf(
         "code" to "USER_ALREADY_EXISTS",
+        "message" to e.message
+    )
+
+    @ExceptionHandler(RateLimitException::class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    fun onRateLimitExceeded(
+        e: RateLimitException
+    ) = mapOf(
+        "code" to "RATE_LIMIT_EXCEEDED",
         "message" to e.message
     )
 

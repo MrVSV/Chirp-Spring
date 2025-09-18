@@ -3,6 +3,7 @@ package com.vsv.chirp.api.controllers
 import com.vsv.chirp.api.dto.*
 import com.vsv.chirp.api.mappers.toAuthenticatedUserDto
 import com.vsv.chirp.api.mappers.toUserDto
+import com.vsv.chirp.infra.rate_limiting.EmailRateLimiter
 import com.vsv.chirp.service.AuthService
 import com.vsv.chirp.service.EmailVerificationService
 import com.vsv.chirp.service.PasswordResetService
@@ -19,7 +20,8 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val authService: AuthService,
     private val emailVerificationService: EmailVerificationService,
-    private val passwordResetService: PasswordResetService
+    private val passwordResetService: PasswordResetService,
+    private val emailRateLimiter: EmailRateLimiter
 ) {
 
     @PostMapping("/register")
@@ -48,6 +50,17 @@ class AuthController(
         return authService.refresh(body.refreshToken).toAuthenticatedUserDto()
     }
 
+    @PostMapping("/resend-verification")
+    fun resendVerification(
+        @Valid @RequestBody body: EmailRequest
+    ) {
+        emailRateLimiter.withRateLimit(
+            email = body.email,
+        ) {
+            emailVerificationService.resendVerificationEmail(body.email)
+        }
+    }
+
     @GetMapping("/verify")
     fun verifyEmail(
         @RequestParam token: String,
@@ -59,7 +72,7 @@ class AuthController(
     @PostMapping("/forgot-password")
     fun forgotPassword(
         @Valid @RequestBody body: EmailRequest,
-    ){
+    ) {
         passwordResetService.requestPasswordReset(
             email = body.email,
         )
@@ -68,7 +81,7 @@ class AuthController(
     @PostMapping("/reset-password")
     fun resetPassword(
         @Valid @RequestBody body: ResetPasswordRequest,
-    ){
+    ) {
         passwordResetService.resetPassword(
             token = body.token,
             newPassword = body.newPassword,
@@ -78,6 +91,6 @@ class AuthController(
     @PostMapping("/change-password")
     fun changePassword(
         @Valid @RequestBody body: ChangePasswordRequest,
-    ){
+    ) {
     }
 }
