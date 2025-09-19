@@ -1,6 +1,6 @@
 package com.vsv.chirp.infra.database.repositories
 
-import com.vsv.chirp.domain.model.UserId
+import com.vsv.chirp.domain.type.UserId
 import com.vsv.chirp.infra.database.entities.RefreshTokenEntity
 import org.springframework.data.jpa.repository.JpaRepository
 
