@@ -6,18 +6,18 @@ import org.springframework.core.io.Resource
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 @Component
-class EmailRateLimiter(
+class IpRateLimiter(
     private val redisTemplate: StringRedisTemplate,
 ) {
 
     companion object {
-        private const val EMAIL_RATE_LIMIT_PREFIX = "rate_limit:email"
-        private const val EMAIL_ATTEMPT_COUNT_PREFIX = "email_attempt_count"
+        private const val IP_RATE_LIMIT_PREFIX = "rate_limit:ip"
     }
 
-    @Value("classpath:email_rate_limit.lua")
+    @Value("classpath:ip_rate_limit.lua")
     lateinit var rateLimitResource: Resource
 
     private val rateLimitScript by lazy {
@@ -28,27 +28,30 @@ class EmailRateLimiter(
         DefaultRedisScript(script, List::class.java as Class<List<Long>>)
     }
 
-    fun withRateLimit(
-        email: String,
-        action: () -> Unit
-    ) {
-        val normalizedEmail = email.lowercase().trim()
-
-        val rateLimitKey = "$EMAIL_RATE_LIMIT_PREFIX:$normalizedEmail"
-        val attemptCountKey = "$EMAIL_ATTEMPT_COUNT_PREFIX:$normalizedEmail"
+    fun <T> withIpRateLimit(
+        ipAddress: String,
+        resetsIn: Duration,
+        maxRequestsFromIp: Int,
+        action: () -> T
+    ): T {
+        val key = "$IP_RATE_LIMIT_PREFIX:$ipAddress"
 
         val result = redisTemplate.execute(
             rateLimitScript,
-            listOf(rateLimitKey, attemptCountKey)
+            listOf(key),
+            maxRequestsFromIp.toString(),
+            resetsIn.seconds.toString(),
         )
 
-        val attemptCount = result[0]
-        val ttl = result[1]
+        val currentCount = result[0]
 
-        if (attemptCount == -1L) {
-            throw RateLimitException(resetsInSeconds = ttl)
+        return if (currentCount <= maxRequestsFromIp) {
+            action()
+        } else {
+            val ttl = result[1]
+            throw RateLimitException(ttl)
         }
-
-        action()
     }
+
+
 }
