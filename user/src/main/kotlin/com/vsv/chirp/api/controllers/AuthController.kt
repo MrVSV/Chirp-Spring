@@ -4,6 +4,7 @@ import com.vsv.chirp.api.config.IpRateLimit
 import com.vsv.chirp.api.dto.*
 import com.vsv.chirp.api.mappers.toAuthenticatedUserDto
 import com.vsv.chirp.api.mappers.toUserDto
+import com.vsv.chirp.api.util.requestUserId
 import com.vsv.chirp.infra.rate_limiting.EmailRateLimiter
 import com.vsv.chirp.service.AuthService
 import com.vsv.chirp.service.EmailVerificationService
@@ -121,5 +122,10 @@ class AuthController(
     fun changePassword(
         @Valid @RequestBody body: ChangePasswordRequest,
     ) {
+        passwordResetService.changePassword(
+            userId = requestUserId,
+            oldPassword = body.oldPassword,
+            newPassword = body.newPassword,
+        )
     }
 }

@@ -5,6 +5,7 @@ import com.vsv.chirp.domain.exception.InvalidCredentialsException
 import com.vsv.chirp.domain.exception.InvalidTokenException
 import com.vsv.chirp.domain.exception.RateLimitException
 import com.vsv.chirp.domain.exception.SamePasswordException
+import com.vsv.chirp.domain.exception.UnauthorizedException
 import com.vsv.chirp.domain.exception.UserAlreadyExistsException
 import com.vsv.chirp.domain.exception.UserNotFoundException
 import org.springframework.http.HttpStatus
@@ -50,6 +51,15 @@ class AuthExceptionHandler {
         e: InvalidCredentialsException
     ) = mapOf(
         "code" to "INVALID_CREDENTIALS",
+        "message" to e.message
+    )
+
+    @ExceptionHandler(UnauthorizedException::class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    fun onUnauthorized(
+        e: UnauthorizedException
+    ) = mapOf(
+        "code" to "UNAUTHORIZED",
         "message" to e.message
     )
 
