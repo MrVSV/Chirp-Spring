@@ -1,5 +1,6 @@
 package com.vsv.chirp.service
 
+import com.vsv.chirp.domain.events.user.UserEvent
 import com.vsv.chirp.domain.exception.EmailNotVerifiedException
 import com.vsv.chirp.domain.exception.InvalidCredentialsException
 import com.vsv.chirp.domain.exception.InvalidTokenException
@@ -10,6 +11,7 @@ import com.vsv.chirp.infra.database.entities.PasswordResetTokenEntity
 import com.vsv.chirp.infra.database.repositories.PasswordResetTokenRepository
 import com.vsv.chirp.infra.database.repositories.RefreshTokenRepository
 import com.vsv.chirp.infra.database.repositories.UserRepository
+import com.vsv.chirp.infra.message_queue.EventPublisher
 import com.vsv.chirp.infra.security.PasswordEncoder
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.repository.findByIdOrNull
@@ -27,6 +29,7 @@ class PasswordResetService(
     @param:Value("\${chirp.email.reset-password.expiry-minutes}")
     private val expiryMinutes: Long,
     private val refreshTokenRepository: RefreshTokenRepository,
+    private val eventPublisher: EventPublisher,
 ) {
 
     @Transactional
@@ -42,7 +45,15 @@ class PasswordResetService(
         )
         passwordResetTokenRepository.save(token)
 
-        //TODO: notification
+        eventPublisher.publish(
+            event = UserEvent.RequestResetPassword(
+                userId = user.id!!,
+                email = email,
+                username = user.username,
+                resetPasswordToken = token.token,
+                expiresInMinutes = expiryMinutes
+            )
+        )
     }
 
     @Transactional
