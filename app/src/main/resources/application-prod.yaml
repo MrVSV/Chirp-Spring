@@ -10,6 +10,8 @@ nginx:
   require-proxy: true
 
 chirp:
+  email:
+    url: "https://chirp.vsv.ru"
   rate-limit:
     ip:
       apply-limit: true

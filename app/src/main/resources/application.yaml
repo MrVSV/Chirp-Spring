@@ -41,6 +41,18 @@ spring:
         format_sql: true
         show_sql: true
 
+  mail:
+    port: 587
+    host: postbox.cloud.yandex.net
+    username: ajeqpm2eumtcrkkbf34h
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   rabbitmq:
     host: horse.lmq.cloudamqp.com
     password: ${RABBITMQ_PASSWORD}
@@ -67,6 +79,7 @@ jwt:
 
 chirp:
   email:
+    from: vsv@vsvtest.ru
     verification:
       expiry-hours: 24
     reset-password:
