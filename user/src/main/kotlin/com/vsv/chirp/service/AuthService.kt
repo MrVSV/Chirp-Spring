@@ -1,5 +1,6 @@
 package com.vsv.chirp.service
 
+import com.vsv.chirp.domain.events.user.UserEvent
 import com.vsv.chirp.domain.exception.EmailNotVerifiedException
 import com.vsv.chirp.domain.exception.InvalidCredentialsException
 import com.vsv.chirp.domain.exception.InvalidTokenException
@@ -13,6 +14,7 @@ import com.vsv.chirp.infra.database.entities.UserEntity
 import com.vsv.chirp.infra.database.repositories.RefreshTokenRepository
 import com.vsv.chirp.infra.database.repositories.UserRepository
 import com.vsv.chirp.infra.mappers.toUser
+import com.vsv.chirp.infra.message_queue.EventPublisher
 import com.vsv.chirp.infra.security.PasswordEncoder
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -27,7 +29,8 @@ class AuthService(
     private val refreshTokenRepository: RefreshTokenRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
-    private val emailVerificationService: EmailVerificationService
+    private val emailVerificationService: EmailVerificationService,
+    private val eventPublisher: EventPublisher
 ) {
 
     @Transactional
@@ -45,6 +48,16 @@ class AuthService(
             )
         ).toUser()
         val token = emailVerificationService.createVerificationToken(email.trim())
+
+        eventPublisher.publish(
+            UserEvent.Created(
+                userId = savedUser.id,
+                email = savedUser.email,
+                username = savedUser.username,
+                verificationToken = token.token
+            )
+        )
+
         return savedUser
     }
 
@@ -98,6 +111,13 @@ class AuthService(
             )
         } ?: throw UserNotFoundException()
 
+    }
+
+    @Transactional
+    fun logout(refreshToken: String) {
+        val userId = jwtService.getUserIdFromJWT(refreshToken)
+        val hashed = hashToken(refreshToken)
+        refreshTokenRepository.deleteByUserIdAndHashedToken(userId, hashed)
     }
 
     private fun storeRefreshToken(userId: UserId, token: String) {
