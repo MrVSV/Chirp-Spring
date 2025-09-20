@@ -49,17 +49,17 @@ class RabbitMqConfig {
         }
     }
 
-    @Bean
-    fun rabbitListenerContainerFactory(
-        connectionFactory: ConnectionFactory,
-        transactionManager: PlatformTransactionManager
-    ): SimpleRabbitListenerContainerFactory {
-        return SimpleRabbitListenerContainerFactory().apply {
-            setConnectionFactory(connectionFactory)
-            setTransactionManager(transactionManager)
-            setChannelTransacted(true)
-        }
-    }
+//    @Bean
+//    fun rabbitListenerContainerFactory(
+//        connectionFactory: ConnectionFactory,
+//        transactionManager: PlatformTransactionManager
+//    ): SimpleRabbitListenerContainerFactory {
+//        return SimpleRabbitListenerContainerFactory().apply {
+//            setConnectionFactory(connectionFactory)
+//            setTransactionManager(transactionManager)
+//            setChannelTransacted(true)
+//        }
+//    }
 
     @Bean
     fun rabbitTemplate(
