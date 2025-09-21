@@ -14,7 +14,7 @@ import java.time.Instant
         Index(name = "idx_chat_participant_username", columnList = "username")
     ]
 )
-data class ChatParticipantEntity(
+class ChatParticipantEntity(
     @Id
     var userId: UserId,
     @Column(nullable = false, unique = true)
