@@ -33,6 +33,7 @@ class ChatMessageEntity(
     @Column(nullable = false)
     var content: String,
     @Column(
+        name = "chat_id",
         nullable = false,
         updatable = false
     )

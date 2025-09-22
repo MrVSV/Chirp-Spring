@@ -16,7 +16,7 @@ interface ChatRepository: JpaRepository<ChatEntity, ChatId> {
         AND EXISTS (
             SELECT 1 
             FROM c.participants p
-            WHERE p.userId == :userId
+            WHERE p.userId = :userId
         )
     """)
     fun findChatById(chatId: ChatId, userId: UserId): ChatEntity?

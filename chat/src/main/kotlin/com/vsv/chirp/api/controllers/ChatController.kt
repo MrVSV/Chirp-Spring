@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/chat")
 class ChatController(private val chatService: ChatService) {
 
-    @PostMapping("/create-chat")
+    @PostMapping
     fun createChat(
         @Valid @RequestBody body: CreateChatRequest
     ): ChatDto {
