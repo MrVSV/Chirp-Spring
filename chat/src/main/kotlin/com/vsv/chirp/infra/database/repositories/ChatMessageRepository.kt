@@ -31,8 +31,8 @@ interface ChatMessageRepository: JpaRepository<ChatMessageEntity, ChatMessageId>
         AND (m.createdAt, m.id) = (
             SELECT m2.createdAt, m2.id
             FROM ChatMessageEntity m2
-            WHERE m.chatId = :chatId
-            ORDER BY m.createdAt DESC
+            WHERE m2.chatId = m.chatId
+            ORDER BY m2.createdAt DESC
             LIMIT 1
         )
     """)
