@@ -9,6 +9,7 @@ import com.vsv.chirp.api.util.requestUserId
 import com.vsv.chirp.domain.type.ChatId
 import com.vsv.chirp.service.ChatService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ResponseStatusException
 import java.time.Instant
 
 @RestController
@@ -28,13 +30,27 @@ class ChatController(
     companion object {
         private const val DEFAULT_PAGE_SIZE = 20
     }
+
     @GetMapping("/{chatId}/messages")
-    fun getMessages(
+    fun getChatMessages(
         @PathVariable("chatId") chatId: ChatId,
         @RequestParam("before", required = false) before: Instant? = null,
         @RequestParam("pageSize", required = false) pageSize: Int = DEFAULT_PAGE_SIZE,
     ) : List<ChatMessageDto> {
         return chatService.getChatMessages(chatId, before, pageSize)
+    }
+
+    @GetMapping("/{chatId}")
+    fun getChat(
+        @PathVariable("chatId") chatId: ChatId,
+    ): ChatDto {
+        return chatService.getChatById(chatId, requestUserId)?.toChatDto()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+    }
+
+    @GetMapping
+    fun getChatsByUserId(): List<ChatDto> {
+        return chatService.findChatsByUserId(requestUserId).map { it.toChatDto() }
     }
 
     @PostMapping

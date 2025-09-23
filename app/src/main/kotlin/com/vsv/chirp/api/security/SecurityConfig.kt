@@ -1,4 +1,4 @@
-package com.vsv.chirp.security
+package com.vsv.chirp.api.security
 
 import com.vsv.chirp.api.config.JwtAuthFilter
 import jakarta.servlet.DispatcherType
