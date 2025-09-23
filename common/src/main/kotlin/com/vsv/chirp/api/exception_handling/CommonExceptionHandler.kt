@@ -1,6 +1,7 @@
 package com.vsv.chirp.api.exception_handling
 
 import com.vsv.chirp.domain.exception.ForbiddenException
+import com.vsv.chirp.domain.exception.InvalidTokenException
 import com.vsv.chirp.domain.exception.UnauthorizedException
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -25,6 +26,15 @@ class CommonExceptionHandler {
         e: UnauthorizedException
     ) = mapOf(
         "code" to "UNAUTHORIZED",
+        "message" to e.message
+    )
+
+    @ExceptionHandler(InvalidTokenException::class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    fun onInvalidToken(
+        e: InvalidTokenException
+    ) = mapOf(
+        "code" to "INVALID_TOKEN",
         "message" to e.message
     )
 }

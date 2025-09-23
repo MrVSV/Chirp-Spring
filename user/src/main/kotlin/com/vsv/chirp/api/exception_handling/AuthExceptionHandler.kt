@@ -47,14 +47,7 @@ class AuthExceptionHandler {
         "message" to e.message
     )
 
-    @ExceptionHandler(InvalidTokenException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun onInvalidToken(
-        e: InvalidTokenException
-    ) = mapOf(
-        "code" to "INVALID_TOKEN",
-        "message" to e.message
-    )
+
 
     @ExceptionHandler(EmailNotVerifiedException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
