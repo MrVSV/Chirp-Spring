@@ -1,13 +1,6 @@
 package com.vsv.chirp.api.exception_handling
 
-import com.vsv.chirp.domain.exception.EmailNotVerifiedException
-import com.vsv.chirp.domain.exception.InvalidCredentialsException
-import com.vsv.chirp.domain.exception.InvalidTokenException
-import com.vsv.chirp.domain.exception.RateLimitException
-import com.vsv.chirp.domain.exception.SamePasswordException
-import com.vsv.chirp.domain.exception.UnauthorizedException
-import com.vsv.chirp.domain.exception.UserAlreadyExistsException
-import com.vsv.chirp.domain.exception.UserNotFoundException
+import com.vsv.chirp.domain.exception.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -51,15 +44,6 @@ class AuthExceptionHandler {
         e: InvalidCredentialsException
     ) = mapOf(
         "code" to "INVALID_CREDENTIALS",
-        "message" to e.message
-    )
-
-    @ExceptionHandler(UnauthorizedException::class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    fun onUnauthorized(
-        e: UnauthorizedException
-    ) = mapOf(
-        "code" to "UNAUTHORIZED",
         "message" to e.message
     )
 

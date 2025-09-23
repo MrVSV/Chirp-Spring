@@ -2,6 +2,6 @@ package com.vsv.chirp.domain.exception
 
 import com.vsv.chirp.domain.type.UserId
 
-class ChatParticipantNotFoundException(private val userId: UserId): RuntimeException(
+class ChatParticipantNotFoundException(userId: UserId): RuntimeException(
     "The chat participant with ID $userId was not found."
 )

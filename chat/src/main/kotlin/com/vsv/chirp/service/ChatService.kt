@@ -1,5 +1,7 @@
 package com.vsv.chirp.service
 
+import com.vsv.chirp.api.dto.ChatMessageDto
+import com.vsv.chirp.api.mappers.toChatMessageDto
 import com.vsv.chirp.domain.exception.ChatNotFoundException
 import com.vsv.chirp.domain.exception.ChatParticipantNotFoundException
 import com.vsv.chirp.domain.exception.ForbiddenException
@@ -14,10 +16,11 @@ import com.vsv.chirp.infra.database.mappers.toChatMessage
 import com.vsv.chirp.infra.database.repositories.ChatMessageRepository
 import com.vsv.chirp.infra.database.repositories.ChatParticipantRepository
 import com.vsv.chirp.infra.database.repositories.ChatRepository
-import org.slf4j.LoggerFactory
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Service
 class ChatService(
@@ -25,8 +28,6 @@ class ChatService(
     private val chatMessageRepository: ChatMessageRepository,
     private val chatParticipantRepository: ChatParticipantRepository,
 ) {
-
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun creatChat(
@@ -76,7 +77,6 @@ class ChatService(
         }
 
         val lastMessage = lastMessageForChat(chatId)
-        logger.info("Adding participants to chat $chatId")
 
         val updatedChat = chatRepository.save(
             chat.apply {
@@ -110,8 +110,22 @@ class ChatService(
         )
     }
 
+    fun getChatMessages(
+        chatId: ChatId,
+        before: Instant?,
+        pageSize: Int,
+    ) : List<ChatMessageDto> {
+        return chatMessageRepository.findByChatIdBefore(
+            chatId = chatId,
+            before = before ?: Instant.now(),
+            pageable = PageRequest.of(0, pageSize)
+        )
+            .content
+            .asReversed()
+            .map { it.toChatMessage().toChatMessageDto() }
+    }
+
     private fun lastMessageForChat(chatId: ChatId): ChatMessage? {
-        logger.info("Find last message for $chatId")
         return chatMessageRepository
             .findLatestMessagesByChatId(setOf(chatId))
             .firstOrNull()
