@@ -1,5 +1,7 @@
 package com.vsv.chirp.infra.storage
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.vsv.chirp.domain.exception.InvalidProfileImageException
 import com.vsv.chirp.domain.exception.StorageException
 import com.vsv.chirp.domain.models.ProfileImageUploadCredentials
@@ -75,6 +77,7 @@ class SupabaseStorageService(
         val response = supabaseRestClient
             .post()
             .uri("/storage/v1/object/upload/sign/$path")
+            .header("Content-Type", "application/json")
             .body(json)
             .retrieve()
             .body(SignedUploadResponse::class.java)
@@ -83,7 +86,8 @@ class SupabaseStorageService(
         return "$supabaseUrl/storage/v1${response.url}"
     }
 
-    private data class SignedUploadResponse(
+    private data class SignedUploadResponse @JsonCreator constructor(
+        @JsonProperty("url")
         val url: String,
     )
 }
