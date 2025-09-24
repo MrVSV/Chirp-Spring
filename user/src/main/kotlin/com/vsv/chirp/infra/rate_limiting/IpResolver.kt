@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.security.web.util.matcher.IpAddressMatcher
 import org.springframework.stereotype.Component
-import java.lang.Exception
+
 import java.net.Inet4Address
 import java.net.Inet6Address
 
@@ -33,7 +33,7 @@ class IpResolver(
         )
     }
 
-    private val logger = LoggerFactory.getLogger(IpResolver::class.java)
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private val trustedMatchers: List<IpAddressMatcher> = nginxConfig
         .trustedIps

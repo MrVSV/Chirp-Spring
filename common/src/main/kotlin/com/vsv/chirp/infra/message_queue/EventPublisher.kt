@@ -4,7 +4,7 @@ import com.vsv.chirp.domain.events.ChirpEvent
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.stereotype.Component
-import java.lang.Exception
+
 
 @Component
 class EventPublisher(

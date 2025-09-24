@@ -8,6 +8,7 @@ import com.vsv.chirp.api.mappers.toChatMessageDto
 import com.vsv.chirp.domain.event.ChatParticipantLeftEvent
 import com.vsv.chirp.domain.event.ChatParticipantsJoinedEvent
 import com.vsv.chirp.domain.event.MessageDeletedEvent
+import com.vsv.chirp.domain.event.ProfileImageUpdatedEvent
 import com.vsv.chirp.domain.type.ChatId
 import com.vsv.chirp.domain.type.UserId
 import com.vsv.chirp.service.ChatMessageService
@@ -205,6 +206,49 @@ class ChatWebSocketHandler(
                 )
             )
         )
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onProfileImageUpdated(event: ProfileImageUpdatedEvent) {
+
+        val userChats = connectionLock.read {
+            userChatIds[event.userId]?.toList() ?: emptyList()
+        }
+
+        val dto = ProfileImageUpdateDto(
+            userId = event.userId,
+            newImageUrl = event.newImageUrl
+        )
+
+        val sessionIds = mutableSetOf<String>()
+        userChats.forEach { chatId ->
+            connectionLock.read {
+                chatToSessions[chatId]?.let { sessions ->
+                    sessionIds.addAll(sessions)
+                }
+            }
+        }
+
+        val websocketMessage = OutgoingWebSocketMessage(
+            type = OutgoingWebSocketMessageType.PROFILE_IMAGE_UPDATED,
+            payload = mapper.writeValueAsString(dto)
+        )
+
+        val messageJson = mapper.writeValueAsString(websocketMessage)
+
+        sessionIds.forEach { sessionId ->
+            val userSession = connectionLock.read {
+                sessions[sessionId]
+            } ?: return@forEach
+            try {
+                if(userSession.session.isOpen) {
+                    userSession.session.sendMessage(TextMessage(messageJson))
+                }
+            } catch (e: Exception) {
+                logger.error("Could not send profile update to session $sessionId", e)
+            }
+        }
+
     }
 
     @Scheduled(fixedDelay = PING_INTERVAL_MS)

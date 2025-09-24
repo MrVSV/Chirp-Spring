@@ -1,7 +1,5 @@
 package com.vsv.chirp.domain.exception
 
-import java.lang.RuntimeException
-
 class RateLimitException(
     val resetsInSeconds: Long,
 ): RuntimeException(

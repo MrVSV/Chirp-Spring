@@ -21,7 +21,7 @@ class EmailService(
     private val baseUrl: String,
 ) {
 
-    private val logger = LoggerFactory.getLogger(EmailService::class.java)
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     fun sendVerificationEmail(
         email: String,
