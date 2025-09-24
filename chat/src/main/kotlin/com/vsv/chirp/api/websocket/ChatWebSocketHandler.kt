@@ -2,8 +2,12 @@ package com.vsv.chirp.api.websocket
 
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.vsv.chirp.api.dto.ws.*
 import com.vsv.chirp.api.mappers.toChatMessageDto
+import com.vsv.chirp.domain.event.ChatParticipantLeftEvent
+import com.vsv.chirp.domain.event.ChatParticipantsJoinedEvent
+import com.vsv.chirp.domain.event.MessageDeletedEvent
 import com.vsv.chirp.domain.type.ChatId
 import com.vsv.chirp.domain.type.UserId
 import com.vsv.chirp.service.ChatMessageService
@@ -11,8 +15,13 @@ import com.vsv.chirp.service.ChatService
 import com.vsv.chirp.service.JwtService
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import org.springframework.transaction.event.TransactionPhase
+import org.springframework.transaction.event.TransactionalEventListener
 import org.springframework.web.socket.CloseStatus
+import org.springframework.web.socket.PingMessage
+import org.springframework.web.socket.PongMessage
 import org.springframework.web.socket.TextMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.TextWebSocketHandler
@@ -29,6 +38,11 @@ class ChatWebSocketHandler(
     private val objectMapper: ObjectMapper,
 ) : TextWebSocketHandler() {
 
+    companion object {
+        private const val PING_INTERVAL_MS = 30_000L
+        private const val PONG_TIMEOUT_MS = 60_000L
+    }
+    private val mapper = objectMapper.registerModule(JavaTimeModule())
     private val logger = LoggerFactory.getLogger(javaClass)
 
     private val connectionLock = ReentrantReadWriteLock()
@@ -88,13 +102,13 @@ class ChatWebSocketHandler(
         }
 
         try {
-            val websocketMessage = objectMapper.readValue(
+            val websocketMessage = mapper.readValue(
                 message.payload,
                 IncomingWebSocketMessage::class.java
             )
             when (websocketMessage.type) {
                 IncomingWebSocketMessageType.NEW_MESSAGE -> {
-                    val dto = objectMapper.readValue(
+                    val dto = mapper.readValue(
                         websocketMessage.payload,
                         SendMessageDto::class.java
                     )
@@ -114,6 +128,163 @@ class ChatWebSocketHandler(
                 )
             )
         }
+    }
+
+    override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
+        connectionLock.write {
+            sessions.remove(session.id)?.let { userSession -> //removed session
+                val userId = userSession.userId
+
+                userToSessions.compute(userId) { _, sessions ->
+                    sessions
+                        ?.apply { remove(session.id) }
+                        ?.takeIf { it.isNotEmpty() }
+                }
+
+                userChatIds[userId]?.forEach { chatId ->
+                    chatToSessions.compute(chatId) { _, sessions ->
+                        sessions
+                            ?.apply { remove(session.id) }
+                            ?.takeIf { it.isNotEmpty() }
+                    }
+
+                }
+
+                logger.info("WebSocket connection closed for user $userId")
+            }
+        }
+    }
+
+    override fun handleTransportError(session: WebSocketSession, exception: Throwable) {
+        logger.error("WebSocket connection error for ${session.id}", exception)
+        session.close(CloseStatus.SERVER_ERROR.withReason("Transport error"))
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onDeleteMessage(event: MessageDeletedEvent) {
+        broadcastToChat(
+            chatId = event.chatId,
+            message = OutgoingWebSocketMessage(
+                type = OutgoingWebSocketMessageType.MESSAGE_DELETED,
+                payload = mapper.writeValueAsString(
+                    DeleteMessageDto(
+                        chatId = event.chatId,
+                        messageId = event.messageId
+                    )
+                )
+            )
+        )
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onJoinChat(event: ChatParticipantsJoinedEvent) {
+        connectionLock.write {
+            event.userIds.forEach { userId ->
+                userChatIds.compute(userId) { _, chatIds ->
+                    (chatIds ?: mutableSetOf()).apply {
+                        add(event.chatId)
+                    }
+                }
+                userToSessions[userId]?.forEach { sessionId ->
+                    chatToSessions.compute(event.chatId) { _, sessions ->
+                        (sessions ?: mutableSetOf()).apply {
+                            add(sessionId)
+                        }
+                    }
+                }
+            }
+        }
+        broadcastToChat(
+            chatId = event.chatId,
+            message = OutgoingWebSocketMessage(
+                type = OutgoingWebSocketMessageType.CHAT_PARTICIPANTS_CHANGED,
+                payload = mapper.writeValueAsString(
+                    ChatParticipantsChangedDto(
+                        chatId = event.chatId,
+                    )
+                )
+            )
+        )
+    }
+
+    @Scheduled(fixedDelay = PING_INTERVAL_MS)
+    fun pingClient() {
+        val currentTime = System.currentTimeMillis()
+        val sessionsToClose = mutableListOf<String>()
+
+        val sessionsSnapshot = connectionLock.read {
+            sessions.toMap()
+        }
+
+        sessionsSnapshot.forEach { (sessionId, userSession) ->
+            try {
+                if (userSession.session.isOpen) {
+                    val lastPong = userSession.lastPongTimestamp
+                    if ((currentTime - lastPong) > PONG_TIMEOUT_MS) {
+                        logger.warn("Client $sessionId has timed out, closing connection")
+                        sessionsToClose.add(sessionId)
+                        return@forEach
+                    }
+                    userSession.session.sendMessage(PingMessage())
+                    logger.debug("Sent ping to {}", userSession.userId)
+                }
+            } catch (e: Exception) {
+                logger.error("Could not ping session $sessionId", e)
+                sessionsToClose.add(sessionId)
+            }
+        }
+
+        sessionsToClose.forEach { sessionId ->
+            connectionLock.read {
+                sessions[sessionId]?.session?.let { session ->
+                    try {
+                        session.close(CloseStatus.GOING_AWAY.withReason("Ping timeout"))
+                    } catch (e: Exception) {
+                        logger.error("Could not close session for user ${session.id}", e)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun handlePongMessage(session: WebSocketSession, message: PongMessage) {
+        connectionLock.write {
+            sessions.compute(session.id) { _, userSession ->
+                userSession?.copy(
+                    lastPongTimestamp = System.currentTimeMillis()
+                )
+            }
+        }
+        logger.debug("Received pong from ${session.id}")
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun onLeaveChat(event: ChatParticipantLeftEvent) {
+        connectionLock.write {
+            userChatIds.compute(event.userId) { _, chatIds ->
+                chatIds
+                    ?.apply { remove(event.chatId) }
+                    ?.takeIf { it.isNotEmpty() }
+            }
+            userToSessions[event.userId]?.forEach { sessionId ->
+                chatToSessions.compute(event.chatId) { _, sessionIds ->
+                    sessionIds
+                        ?.apply { remove(sessionId) }
+                        ?.takeIf { it.isNotEmpty() }
+                }
+            }
+        }
+        broadcastToChat(
+            chatId = event.chatId,
+            message = OutgoingWebSocketMessage(
+                type = OutgoingWebSocketMessageType.CHAT_PARTICIPANTS_CHANGED,
+                payload = mapper.writeValueAsString(
+                    ChatParticipantsChangedDto(
+                        chatId = event.chatId,
+                    )
+                )
+            )
+        )
     }
 
     private fun handleSendMessage(
@@ -139,7 +310,7 @@ class ChatWebSocketHandler(
             chatId = dto.chatId,
             message = OutgoingWebSocketMessage(
                 type = OutgoingWebSocketMessageType.NEW_MESSAGE,
-                payload = objectMapper.writeValueAsString(savedMessage.toChatMessageDto())
+                payload = mapper.writeValueAsString(savedMessage.toChatMessageDto())
             )
         )
     }
@@ -178,7 +349,7 @@ class ChatWebSocketHandler(
             }
             if (userSession.session.isOpen) {
                 try {
-                    val messageJson = objectMapper.writeValueAsString(message)
+                    val messageJson = mapper.writeValueAsString(message)
                     userSession.session.sendMessage(TextMessage(messageJson))
                     logger.debug("Sent message to user {}: {}", userId, messageJson)
                 } catch (e: Exception) {
@@ -192,10 +363,10 @@ class ChatWebSocketHandler(
         session: WebSocketSession,
         error: ErrorDto
     ) {
-        val webSocketMessage = objectMapper.writeValueAsString(
+        val webSocketMessage = mapper.writeValueAsString(
             OutgoingWebSocketMessage(
                 type = OutgoingWebSocketMessageType.ERROR,
-                payload = objectMapper.writeValueAsString(error),
+                payload = mapper.writeValueAsString(error),
             )
         )
 
@@ -210,6 +381,7 @@ class ChatWebSocketHandler(
 
     private data class UserSession(
         val userId: UserId,
-        val session: WebSocketSession
+        val session: WebSocketSession,
+        val lastPongTimestamp: Long = System.currentTimeMillis(),
     )
 }

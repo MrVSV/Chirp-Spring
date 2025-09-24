@@ -13,6 +13,8 @@ dependencies {
     implementation(projects.common)
 
     implementation(libs.kotlin.reflect)
+//    implementation(libs.jackson.module.kotlin)
+//    implementation(libs.jackson.datatype.jsr310)
     implementation(libs.spring.boot.starter.mail)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.data.jpa)

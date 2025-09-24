@@ -14,7 +14,8 @@ repositories {
 
 dependencies {
     implementation(projects.common)
-
+//    implementation(libs.jackson.module.kotlin)
+//    implementation(libs.jackson.datatype.jsr310)
     implementation(libs.spring.boot.starter.websocket)
     implementation(libs.spring.boot.starter.amqp)
     implementation(libs.spring.boot.starter.validation)
