@@ -11,7 +11,6 @@ import com.vsv.chirp.domain.type.ChatId
 import com.vsv.chirp.domain.type.ChatMessageId
 import com.vsv.chirp.domain.type.UserId
 import com.vsv.chirp.infra.database.entities.ChatMessageEntity
-import com.vsv.chirp.infra.database.entities.ChatParticipantEntity
 import com.vsv.chirp.infra.database.mappers.toChatMessage
 import com.vsv.chirp.infra.database.repositories.ChatMessageRepository
 import com.vsv.chirp.infra.database.repositories.ChatParticipantRepository
@@ -47,7 +46,7 @@ class ChatMessageService(
         val chat = chatRepository.findChatById(chatId, senderId)
             ?:throw ChatNotFoundException()
         val sender = chatParticipantRepository.findByIdOrNull(senderId)
-            ?: ChatParticipantNotFoundException(senderId)
+            ?: throw ChatParticipantNotFoundException(senderId)
 
 
         val savedMessage = chatMessageRepository.saveAndFlush(
@@ -56,7 +55,7 @@ class ChatMessageService(
                 content = content.trim(),
                 chatId = chatId,
                 chat = chat,
-                sender = sender as ChatParticipantEntity,
+                sender = sender,
             )
         )
 

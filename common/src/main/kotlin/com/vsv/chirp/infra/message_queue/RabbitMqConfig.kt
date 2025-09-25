@@ -98,13 +98,6 @@ class RabbitMqConfig {
     )
 
     @Bean
-    @Qualifier(MessageQueues.CHAT_USER_EVENTS)
-    fun chatUserEventQueue() = Queue(
-        MessageQueues.CHAT_USER_EVENTS,
-        true
-    )
-
-    @Bean
     fun notificationUserEventsBinding(
         @Qualifier(MessageQueues.NOTIFICATION_USER_EVENTS)
         notificationUserEventsQueue: Queue,
@@ -117,6 +110,13 @@ class RabbitMqConfig {
     }
 
     @Bean
+    @Qualifier(MessageQueues.CHAT_USER_EVENTS)
+    fun chatUserEventQueue() = Queue(
+        MessageQueues.CHAT_USER_EVENTS,
+        true
+    )
+
+    @Bean
     fun chatUserEventsBinding(
         @Qualifier(MessageQueues.CHAT_USER_EVENTS)
         chatUserEventsQueue: Queue,
@@ -126,5 +126,24 @@ class RabbitMqConfig {
             .bind(chatUserEventsQueue)
             .to(userExchange)
             .with("user.*")
+    }
+
+    @Bean
+    @Qualifier(MessageQueues.NOTIFICATION_CHAT_EVENTS)
+    fun notificationChatEventQueue() = Queue(
+        MessageQueues.NOTIFICATION_CHAT_EVENTS,
+        true
+    )
+
+    @Bean
+    fun notificationChatEventsBinding(
+        @Qualifier(MessageQueues.NOTIFICATION_CHAT_EVENTS)
+        notificationChatEventsQueue: Queue,
+        chatExchange: TopicExchange,
+    ): Binding {
+        return BindingBuilder
+            .bind(notificationChatEventsQueue)
+            .to(chatExchange)
+            .with(ChatEventConstants.CHAT_NEW_MESSAGE)
     }
 }

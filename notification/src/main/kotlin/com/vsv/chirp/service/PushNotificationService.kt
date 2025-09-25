@@ -105,7 +105,7 @@ class PushNotificationService(
         sendWithRetry(notification)
     }
 
-    fun sendWithRetry(
+    private fun sendWithRetry(
         notification: PushNotification,
         attempt: Int = 0
     ) {
