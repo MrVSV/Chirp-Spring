@@ -35,9 +35,7 @@ class PasswordResetService(
     @Transactional
     fun requestPasswordReset(email: String) {
         val user = userRepository.findByEmail(email) ?: return
-        if (!user.hasVerifiedEmail) {
-            throw EmailNotVerifiedException()
-        }
+
         passwordResetTokenRepository.invalidateActiveTokensForUser(user)
         val token = PasswordResetTokenEntity(
             user = user,
