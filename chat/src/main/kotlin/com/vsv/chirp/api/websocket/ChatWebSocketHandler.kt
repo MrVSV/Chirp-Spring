@@ -2,6 +2,7 @@ package com.vsv.chirp.api.websocket
 
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.vsv.chirp.api.dto.ws.*
 import com.vsv.chirp.api.mappers.toChatMessageDto
@@ -44,7 +45,9 @@ class ChatWebSocketHandler(
         private const val PING_INTERVAL_MS = 30_000L
         private const val PONG_TIMEOUT_MS = 60_000L
     }
-    private val mapper = objectMapper.registerModule(JavaTimeModule())
+    private val mapper = objectMapper
+        .registerModule(JavaTimeModule())
+        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
     private val logger = LoggerFactory.getLogger(javaClass)
 
     private val connectionLock = ReentrantReadWriteLock()
@@ -382,6 +385,7 @@ class ChatWebSocketHandler(
         chatId: ChatId,
         message: OutgoingWebSocketMessage
     ) {
+        logger.info("broadcast message {}", message)
         val chatSessions = connectionLock.read {
             chatToSessions[chatId]?.toList() ?: emptyList()
         }
